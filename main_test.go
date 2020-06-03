@@ -181,3 +181,29 @@ func TestDeleteProduct(t *testing.T) {
 	response = executeRequest(req)
 	checkResponseCode(t, http.StatusNotFound, response.Code)
 }
+
+func TestGetProductsOrderedByPriceAscending(t *testing.T) {
+	clearTable()
+	addProducts(3)
+
+	req, _ := http.NewRequest("GET", "/products/0", nil)
+	response := executeRequest(req)
+	checkResponseCode(t, http.StatusOK, response.Code)
+}
+
+func TestGetProductCount(t *testing.T) {
+	clearTable()
+	nrOfProducts := 3
+	addProducts(nrOfProducts)
+
+	req, _ := http.NewRequest("GET", "/products/count", nil)
+	response := executeRequest(req)
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	var productCount map[string]int
+	json.Unmarshal(response.Body.Bytes(), &productCount)
+
+	if productCount["count"] != nrOfProducts {
+		t.Errorf("Expected a product count of '%v'. Got '%v'", nrOfProducts, productCount["count"])
+	}
+}

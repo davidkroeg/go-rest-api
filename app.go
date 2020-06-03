@@ -40,6 +40,8 @@ func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/product/{id:[0-9]+}", a.getProduct).Methods("GET")
 	a.Router.HandleFunc("/product/{id:[0-9]+}", a.updateProduct).Methods("PUT")
 	a.Router.HandleFunc("/product/{id:[0-9]+}", a.deleteProduct).Methods("DELETE")
+	a.Router.HandleFunc("/products/{ascending:[0-1]}", a.getProductsOrderedByPrice).Methods("GET")
+	a.Router.HandleFunc("/products/count", a.getProductCount).Methods("GET")
 }
 
 func (a *App) getProduct(w http.ResponseWriter, r *http.Request) {
@@ -131,6 +133,7 @@ func (a *App) updateProduct(w http.ResponseWriter, r *http.Request) {
 
 	if err := p.updateProduct(a.DB); err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	respondWithJSON(w, http.StatusOK, p)
@@ -151,4 +154,38 @@ func (a *App) deleteProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
+}
+
+func (a *App) getProductsOrderedByPrice(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	ascending, err := strconv.Atoi(vars["ascending"])
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid sort value")
+		return
+	}
+	var sortAscending bool
+	if ascending == 0 {
+		sortAscending = true
+	} else if ascending == 1 {
+		sortAscending = false
+	}
+
+	products, err := getProductsOrderedByPrice(a.DB, sortAscending)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, products)
+}
+
+func (a *App) getProductCount(w http.ResponseWriter, r *http.Request) {
+	count, err := getProductCount(a.DB)
+
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, map[string]int{"count": count})
 }

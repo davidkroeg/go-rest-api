@@ -54,3 +54,40 @@ func getProducts(db *sql.DB, start, count int) ([]product, error) {
 	}
 	return products, nil
 }
+
+func getProductsOrderedByPrice(db *sql.DB, ascending bool) ([]product, error) {
+	var sortString string
+	if ascending {
+		sortString = "ASC"
+	} else {
+		sortString = "DESC"
+	}
+
+	rows, err := db.Query("SELECT id, name, price FROM products ORDER BY price " + sortString)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	products := []product{}
+	for rows.Next() {
+		var p product
+		if err := rows.Scan(&p.ID, &p.Name, &p.Price); err != nil {
+			return nil, err
+		}
+		products = append(products, p)
+	}
+	return products, nil
+}
+
+func getProductCount(db *sql.DB) (int, error) {
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM products").Scan(&count)
+
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
